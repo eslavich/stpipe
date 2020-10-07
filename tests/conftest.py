@@ -1,8 +1,11 @@
 import io
 
+import pytest
 
-def setup():
-    from ..stpipe import log
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_logging():
+    stpipe import log
 
     # Turn off default logging when running tests
     buffer = io.BytesIO(b"[*]\n")
