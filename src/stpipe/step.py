@@ -26,15 +26,32 @@ except ImportError:
     DISCOURAGED_TYPES = None
 from stdatamodels import DataModel
 
+import traitlets
+
 from . import config
 from . import config_parser
 from . import crds_client
 from . import log
 from . import utilities
 from .format_template import FormatTemplate
+from .traitlets import config_obj_to_traitlets
 
 
-class Step:
+class StepMeta(traitlets.MetaHasTraits):
+    """
+    Step metaclass that convert ConfigObj spec into
+    traitlets.
+    """
+    def setup_class(cls, classdict):
+        if "spec" in classdict:
+            config_obj = config_parser.parse_spec(classdict["spec"], preserve_comments=True)
+            for parameter, traitlet_instance in config_obj_to_traitlets(config_obj).items():
+                setattr(cls, parameter, traitlet_instance)
+                classdict[parameter] = traitlet_instance
+        super().setup_class(classdict)
+
+
+class Step(traitlets.HasTraits, metaclass=StepMeta):
     """
     Step
     """
@@ -263,8 +280,7 @@ class Step:
 
         return step
 
-    def __init__(self, name=None, parent=None, config_file=None,
-                 _validate_kwds=True, **kws):
+    def __init__(self, name=None, parent=None, config_file=None, **kws):
         """
         Create a `Step` instance.
 
@@ -288,14 +304,13 @@ class Step:
             Additional parameters to set.  These will be set as member
             variables on the new Step instance.
         """
+        # HasTraits will set parameter values for us:
+        super().__init__(**kws)
+
         self._reference_files_used = []
         self._input_filename = None
         self._input_dir = None
         self._keywords = kws
-        if _validate_kwds:
-            spec = self.load_spec_file()
-            kws = config_parser.config_from_dict(
-                kws, spec, root_dir=dirname(config_file or ''))
 
         if name is None:
             name = self.__class__.__name__
@@ -307,10 +322,6 @@ class Step:
             self.qualified_name = '.'.join([
                 parent.qualified_name, self.name])
         self.parent = parent
-
-        # Set the parameters as member variables
-        for (key, val) in kws.items():
-            setattr(self, key, val)
 
         # Create a new logger for this step
         self.log = log.getLogger(self.qualified_name)

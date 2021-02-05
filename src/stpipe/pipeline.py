@@ -24,25 +24,25 @@ class Pipeline(Step):
     # the subclass.
     step_defs = {}
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, steps=None, **kwargs):
         """
         See `Step.__init__` for the parameters.
         """
         Step.__init__(self, *args, **kwargs)
 
-        # Configure all of the steps
-        for key, val in self.step_defs.items():
-            cfg = self.steps.get(key)
-            if cfg is not None:
-                new_step = val.from_config_section(
-                    cfg, parent=self, name=key,
-                    config_file=self.config_file)
-            else:
-                new_step = val(
-                    key, parent=self, config_file=self.config_file,
-                    **kwargs.get(key, {}))
+        if steps is None:
+            steps = {}
 
-            setattr(self, key, new_step)
+        # Configure all of the steps
+        for step_name, step_class in self.step_defs.items():
+            step_kwargs = steps.get(step_name, {})
+            step = step_class(
+                name=step_name,
+                parent=self,
+                config_file=self.config_file,
+                **step_kwargs
+            )
+            setattr(self, step_name, step)
 
     @property
     def reference_file_types(self):

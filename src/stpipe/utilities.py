@@ -77,36 +77,6 @@ def import_class(full_name, subclassof=object, config_file=None):
     return step_class
 
 
-def get_spec_file_path(step_class):
-    """
-    Given a Step (sub)class, divine and return the full path to the
-    corresponding spec file. Use the fact that by convention, the spec
-    file is in the same directory as the `step_class` source file. It
-    has the name of the Step (sub)class and extension .spec.
-    """
-    try:
-        step_source_file = inspect.getfile(step_class)
-    except TypeError:
-        return None
-    step_source_file = os.path.abspath(step_source_file)
-
-    # Since `step_class` could be defined in a file called whatever,
-    # we need the source file basedir and the class name.
-    dir = os.path.dirname(step_source_file)
-    return os.path.join(dir, step_class.__name__ + '.spec')
-
-
-def find_spec_file(step_class):
-    """
-    Return the full path of the given Step subclass `step_class`, if
-    it exists or None if it does not.
-    """
-    spec_file = get_spec_file_path(step_class)
-    if spec_file is not None and os.path.exists(spec_file):
-        return spec_file
-    return None
-
-
 def get_fully_qualified_class_name(cls_or_obj):
     """
     Return an object's fully-qualified class name.

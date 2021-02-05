@@ -199,23 +199,30 @@ def load_spec_file(cls, preserve_comments=False):
     # from the base class.
     if not isclass(cls):
         cls = cls.__class__
+
     if 'spec' in cls.__dict__:
-        spec = cls.spec.strip()
-        spec_file = textwrap.dedent(spec)
-        spec_file = spec_file.split('\n')
-        encoded = []
-        for line in spec_file:
-            if isinstance(line, str):
-                encoded.append(line.encode('utf8'))
-            else:
-                encoded.append(line)
-        spec_file = encoded
-    else:
-        spec_file = utilities.find_spec_file(cls)
-    if spec_file:
-        return ConfigObj(spec_file, _inspec=not preserve_comments,
-                         raise_errors=True)
-    return
+        return parse_spec(cls.__dict__['spec'], preserve_comments=preserve_comments)
+
+    return None
+
+
+def parse_spec(spec, preserve_comments=False):
+    """
+    Parse a Step spec string into a ConfigObj instance.
+
+    Parameters
+    ----------
+    spec : str
+    preserve_comments : bool, optional
+        Set to True to retain comments.
+
+    Returns
+    -------
+    ConfigObj
+    """
+    lines = [l.strip().encode("utf-8") for l in spec.strip().split("\n")]
+
+    return ConfigObj(lines, _inspec=not preserve_comments, raise_errors=True)
 
 
 def merge_config(into, new):
